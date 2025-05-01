@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+# --- Step 1: Input Data ---
+# Rotational position in degrees and measured power in µW
+position_deg = np.array([0, 360, 720, 1080, 1100, 1125, 1155, 1190, 1230, 1275, 1321, 1369, 1440, 1442, 
+                         1448, 1457, 1467, 1479, 1493, 1509, 1527, 1547, 1569, 1593, 1619, 1648, 1679, 1716, 
+                         1752, 1789, 1829, 1871, 1915, 1961, 2009, 1800, 2160, 2164, 2172, 2182, 2194, 2208, 
+                         2224, 2242, 2262, 2284, 2318, 2348, 2383, 2421, 2461, 2506, 2510, 2515, 2525, 2545, 2580])
+
+power_uW = np.array([98, 96, 97, 94, 93, 90, 86, 84, 81, 80, 78, 76, 75, 74, 72, 69, 68, 67, 65, 63, 62, 60, 
+                     58, 57, 55, 53, 52, 49, 48, 47, 45, 44, 42, 41, 39, 38, 36, 33, 32, 31, 30, 29, 28, 27, 
+                     25, 24, 23, 21, 19, 18, 17, 16, 15, 14, 13.8, 12.7, 11])
+
+# --- Step 2: Convert degrees to micrometers using ThorLabs micrometer scale ---
+deg_to_um = 50 / 360  # 50 µm per full turn (360°)
+position_um = position_deg * deg_to_um
+
+# --- Step 3: Normalize the position and power ---
+position_norm = (position_um - min(position_um)) / (max(position_um) - min(position_um))
+power_norm = (power_uW - min(power_uW)) / (max(power_uW) - min(power_uW))
+
+# --- Step 4: Gaussian function definition ---
+def gaussian(x, A, mu, sigma):
+    return A * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+
+# --- Step 5: Fit the Gaussian to the data ---
+initial_guess = [1.0, 0.5, 0.1]  # [amplitude, mean, std dev]
+params, _ = curve_fit(gaussian, position_norm, power_norm, p0=initial_guess)
+A_fit, mu_fit, sigma_fit = params
+
+# --- Step 6: Compute Gaussian beam properties ---
+FWHM = 2.355 * sigma_fit
+w_0 = sigma_fit
+z_R = 1.0  # Assume unit Rayleigh range
+wavelength = (w_0**2 * np.pi) / z_R
+
+# --- Step 7: Plot the data and the fit ---
+x_fit = np.linspace(mu_fit - 2.5*sigma_fit, mu_fit + 2.5*sigma_fit, 1000)
+y_fit = gaussian(x_fit, *params)
+
+plt.figure(figsize=(10, 6))
+plt.plot(position_norm, power_norm, 'bo', label='Normalized Data', markersize=5)
+plt.plot(x_fit, y_fit, 'r-', label='Gaussian Fit')
+plt.axvline(x=mu_fit - sigma_fit, color='g', linestyle='--', label='-σ')
+plt.axvline(x=mu_fit + sigma_fit, color='g', linestyle='--', label='+σ')
+plt.axvline(x=mu_fit - 2*sigma_fit, color='m', linestyle='--', label='-2σ')
+plt.axvline(x=mu_fit + 2*sigma_fit, color='m', linestyle='--', label='+2σ')
+plt.axhline(y=0.5, color='black', linestyle=':', linewidth=1, label='Half Maximum')
+
+# Add annotation box for FWHM and waist
+plt.annotate(f"FWHM = {FWHM:.4f}\nBeam Waist ≈ {w_0:.4f}", 
+             xy=(mu_fit + 0.1, 0.5), fontsize=11,
+             bbox=dict(boxstyle="round", facecolor="white", edgecolor="black"))
+
+plt.xlabel("Normalized Position", fontsize=12)
+plt.ylabel("Normalized Power", fontsize=12)
+plt.title("Gaussian Fit to Beam Profile", fontsize=14)
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# --- Step 8: Output results ---
+print("=== Beam Profile Fit Summary ===")
+print(f"Amplitude (A)       = {A_fit:.4f}")
+print(f"Center (μ)          = {mu_fit:.4f} (normalized units)")
+print(f"Standard Deviation  = {sigma_fit:.4f} (normalized units)")
+print(f"FWHM                = {FWHM:.4f} (normalized units)")
+print(f"Estimated Beam Waist (w₀) = {w_0:.4f} (normalized units)")
+print(f"Estimated Wavelength (λ) = {wavelength:.4e} (assuming z₀ = 1.0)")
