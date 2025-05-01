@@ -47,4 +47,26 @@ plt.axvline(x=mu_fit - sigma_fit, color='g', linestyle='--', label='-σ')
 plt.axvline(x=mu_fit + sigma_fit, color='g', linestyle='--', label='+σ')
 plt.axvline(x=mu_fit - 2*sigma_fit, color='m', linestyle='--', label='-2σ')
 plt.axvline(x=mu_fit + 2*sigma_fit, color='m', linestyle='--', label='+2σ')
-plt.ax
+plt.axhline(y=0.5, color='black', linestyle=':', linewidth=1, label='Half Maximum')
+
+# Add annotation box for FWHM and waist
+plt.annotate(f"FWHM = {FWHM:.4f}\nBeam Waist ≈ {w_0:.4f}", 
+             xy=(mu_fit + 0.1, 0.5), fontsize=11,
+             bbox=dict(boxstyle="round", facecolor="white", edgecolor="black"))
+
+plt.xlabel("Normalized Position", fontsize=12)
+plt.ylabel("Normalized Power", fontsize=12)
+plt.title("Gaussian Fit to Beam Profile", fontsize=14)
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# --- Step 8: Output results ---
+print("=== Beam Profile Fit Summary ===")
+print(f"Amplitude (A)       = {A_fit:.4f}")
+print(f"Center (μ)          = {mu_fit:.4f} (normalized units)")
+print(f"Standard Deviation  = {sigma_fit:.4f} (normalized units)")
+print(f"FWHM                = {FWHM:.4f} (normalized units)")
+print(f"Estimated Beam Waist (w₀) = {w_0:.4f} (normalized units)")
+print(f"Estimated Wavelength (λ) = {wavelength:.4e} (assuming z₀ = 1.0)")
